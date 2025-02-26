@@ -56,14 +56,12 @@ class ExerciseCard extends StatelessWidget {
   }
 }
 
-// ==============
-// 瓷砖数据模型
-// ==============
 class ColoredTile {
-  final Color color;
+  final Color? color;
   final UniqueKey key;
+  final bool isEmpty;
 
-  ColoredTile(this.color) : key = UniqueKey();
+  ColoredTile({this.color, this.isEmpty = false}) : key = UniqueKey();
 
   ColoredTile.randomColor()
       : color = Color.fromARGB(
@@ -72,6 +70,7 @@ class ColoredTile {
           math.Random().nextInt(256),
           math.Random().nextInt(256),
         ),
+        isEmpty = false,
         key = UniqueKey();
 }
 
@@ -87,18 +86,124 @@ class TileWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: tile.isEmpty ? null : onTap,
       child: Container(
         key: tile.key,
-        color: tile.color,
+        color: tile.isEmpty ? Colors.white : tile.color,
         width: 100,
         height: 100,
-        margin: EdgeInsets.all(8),
+        margin: EdgeInsets.all(4),
         child: Center(
-          child: Text(
-            "Tile",
-            style: TextStyle(color: Colors.white, fontSize: 16),
+          child: tile.isEmpty
+              ? Text("Empty", style: TextStyle(color: Colors.black, fontSize: 16))
+              : Text("Tile", style: TextStyle(color: Colors.white, fontSize: 16)),
+        ),
+      ),
+    );
+  }
+}
+
+// ==============
+// 主页面组件
+// ==============
+class Exercise6bPage extends StatefulWidget {
+  @override
+  _Exercise6bPageState createState() => _Exercise6bPageState();
+}
+
+// ==============
+// 页面状态
+// ==============
+class _Exercise6bPageState extends State<Exercise6bPage> {
+  late List<ColoredTile> tiles;
+  int gridSize = 4; // 默认4x4网格
+  int emptyIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    generateTiles();
+  }
+
+  void generateTiles() {
+    setState(() {
+      tiles = List.generate(gridSize * gridSize, (index) => ColoredTile.randomColor());
+      emptyIndex = math.Random().nextInt(tiles.length);
+      tiles[emptyIndex] = ColoredTile(isEmpty: true);
+    });
+  }
+
+  void swapTiles(int index) {
+    if (_isAdjacent(index, emptyIndex)) {
+      setState(() {
+        var temp = tiles[emptyIndex];
+        tiles[emptyIndex] = tiles[index];
+        tiles[index] = temp;
+        emptyIndex = index;
+      });
+    }
+  }
+
+  bool _isAdjacent(int index1, int index2) {
+    int row1 = index1 ~/ gridSize, col1 = index1 % gridSize;
+    int row2 = index2 ~/ gridSize, col2 = index2 % gridSize;
+    return (row1 == row2 && (col1 - col2).abs() == 1) ||
+           (col1 == col2 && (row1 - row2).abs() == 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Swapable Color Grid'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: generateTiles,
           ),
+        ],
+      ),
+      body: Center(
+        child: GridView.builder(
+          padding: EdgeInsets.all(8),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: gridSize,
+            childAspectRatio: 1.0,
+          ),
+          itemCount: tiles.length,
+          itemBuilder: (context, index) {
+            return TileWidget(
+              tiles[index],
+              onTap: () => swapTiles(index),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Grid Size: "),
+            DropdownButton<int>(
+              value: gridSize,
+              items: [3, 4, 5, 6]
+                  .map((size) => DropdownMenuItem<int>(
+                        value: size,
+                        child: Text("${size}x${size}"),
+                      ))
+                  .toList(),
+              onChanged: (size) {
+                if (size != null) {
+                  setState(() {
+                    gridSize = size;
+                    generateTiles();
+                  });
+                }
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -154,7 +259,7 @@ class _Exercise6aPageState extends State<Exercise6aPage> {
   }
 }
 
-
+/*
 class Exercise6bPage extends StatefulWidget {
   @override
   _Exercise6bPageState createState() => _Exercise6bPageState();
@@ -252,7 +357,7 @@ class _Exercise6bPageState extends State<Exercise6bPage> {
   }
 }
 
-
+*/
 
 
 // ==============
