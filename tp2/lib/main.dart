@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:async';
-void main() {
-  runApp(MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Exercices Menu',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MenuPage(),
-    );
-  }
+void main() {
+  runApp(MaterialApp(
+    title: 'Exercices Menu',
+    theme: ThemeData(primarySwatch: Colors.blue),
+    home: MenuPage(),
+  ));
 }
 
 class MenuPage extends StatelessWidget {
@@ -34,7 +24,8 @@ class MenuPage extends StatelessWidget {
           ExerciseCard(title: "Exercice 5a", page: Exercise5aPage()),
           ExerciseCard(title: "Exercice 5b", page: Exercise5bPage()),
           ExerciseCard(title: "Exercice 5c", page: Exercise5cPage()),
-          ExerciseCard(title: "Exercice 6", page: Exercise6Page()),
+          ExerciseCard(title: "Exercice 6a", page: Exercise6aPage()),
+          ExerciseCard(title: "Exercice 6b", page: Exercise6bPage())
         ],
       ),
     );
@@ -65,6 +56,206 @@ class ExerciseCard extends StatelessWidget {
   }
 }
 
+// ==============
+// 瓷砖数据模型
+// ==============
+class ColoredTile {
+  final Color color;
+  final UniqueKey key;
+
+  ColoredTile(this.color) : key = UniqueKey();
+
+  ColoredTile.randomColor()
+      : color = Color.fromARGB(
+          255,
+          math.Random().nextInt(256),
+          math.Random().nextInt(256),
+          math.Random().nextInt(256),
+        ),
+        key = UniqueKey();
+}
+
+// ==============
+// 瓷砖组件
+// ==============
+class TileWidget extends StatelessWidget {
+  final ColoredTile tile;
+  final VoidCallback onTap;
+
+  const TileWidget(this.tile, {Key? key, required this.onTap}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        key: tile.key,
+        color: tile.color,
+        width: 100,
+        height: 100,
+        margin: EdgeInsets.all(8),
+        child: Center(
+          child: Text(
+            "Tile",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==============
+// 主页面组件
+// ==============
+class Exercise6aPage extends StatefulWidget {
+  @override
+  _Exercise6aPageState createState() => _Exercise6aPageState();
+}
+
+// ==============
+// 页面状态
+// ==============
+class _Exercise6aPageState extends State<Exercise6aPage> {
+  late List<ColoredTile> tiles;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    tiles = List<ColoredTile>.generate(2, (index) => ColoredTile.randomColor());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Animated Tiles Swap'),
+        centerTitle: true,
+      ),
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List<Widget>.generate(tiles.length, (index) => 
+          TileWidget(tiles[index], onTap: () => swapTiles())
+        ),
+      ),
+    );
+  }
+
+  // ==============
+  // 交换方法
+  // ==============
+  void swapTiles() {
+    setState(() {
+      if (tiles.length >= 2) {
+        tiles = List<ColoredTile>.from(tiles.reversed);
+      }
+    });
+  }
+}
+
+
+class Exercise6bPage extends StatefulWidget {
+  @override
+  _Exercise6bPageState createState() => _Exercise6bPageState();
+}
+
+// ==============
+// 页面状态
+// ==============
+class _Exercise6bPageState extends State<Exercise6bPage> {
+  late List<ColoredTile> tiles;
+  int gridSize = 4; // 默认4x4网格
+  int? selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    generateTiles();
+  }
+
+  void generateTiles() {
+    setState(() {
+      tiles = List.generate(gridSize * gridSize, (index) => ColoredTile.randomColor());
+    });
+  }
+
+  void swapTiles(int index) {
+    setState(() {
+      if (selectedIndex == null) {
+        selectedIndex = index;
+      } else {
+        var temp = tiles[selectedIndex!];
+        tiles[selectedIndex!] = tiles[index];
+        tiles[index] = temp;
+        selectedIndex = null;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Swapable Color Grid'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: generateTiles,
+          ),
+        ],
+      ),
+      body: Center(
+        child: GridView.builder(
+          padding: EdgeInsets.all(8),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: gridSize,
+            childAspectRatio: 1.0,
+          ),
+          itemCount: tiles.length,
+          itemBuilder: (context, index) {
+            return TileWidget(
+              tiles[index],
+              onTap: () => swapTiles(index),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Grid Size: "),
+            DropdownButton<int>(
+              value: gridSize,
+              items: [3, 4, 5, 6]
+                  .map((size) => DropdownMenuItem<int>(
+                        value: size,
+                        child: Text("${size}x${size}"),
+                      ))
+                  .toList(),
+              onChanged: (size) {
+                if (size != null) {
+                  setState(() {
+                    gridSize = size;
+                    generateTiles();
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+// ==============
 class Exercise1Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -569,150 +760,3 @@ class _Exercise5cPageState extends State<Exercise5cPage> {
 }
 
 
-
-
-
-// ex6
-
-class ExerciseCard extends StatelessWidget {
-  final String title;
-  final Widget page;
-
-  ExerciseCard({required this.title, required this.page});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.all(10),
-      child: ListTile(
-        title: Text(title),
-        trailing: Icon(Icons.arrow_forward),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => page),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ==============
-// 随机数生成器
-// ==============
-math.Random random = math.Random();
-
-// ==============
-// 瓷砖数据模型
-// ==============
-class Tile {
-  final Color color;
-  final UniqueKey key;
-
-  Tile(this.color) : key = UniqueKey();
-  
-  Tile.randomColor() 
-    : color = Color.fromARGB(
-        255, 
-        random.nextInt(255), 
-        random.nextInt(255), 
-        random.nextInt(255)
-      ),
-      key = UniqueKey();
-}
-
-// ==============
-// 瓷砖组件
-// ==============
-class TileWidget extends StatelessWidget {
-  final Tile tile;
-
-  const TileWidget(this.tile, {Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      transitionBuilder: (child, animation) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1.0, 0.0), // 从右侧滑入
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        );
-      },
-      child: Container(
-        key: tile.key, // 关键：使用唯一标识
-        color: tile.color,
-        padding: const EdgeInsets.all(70.0),
-      ),
-    );
-  }
-}
-
-// ==============
-// 主页面组件
-// ==============
-class Exercise6Page extends StatefulWidget {
-  @override
-  _Exercise6PageState createState() => _Exercise6PageState();
-}
-
-// ==============
-// 页面状态
-// ==============
-class _Exercise6PageState extends State<Exercise6Page> {
-  late List<Tile> tiles;
-
-  @override
-  void initState() {
-    super.initState();
-    tiles = List.generate(2, (index) => Tile.randomColor());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Animated Tiles Swap'),
-        centerTitle: true,
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        transitionBuilder: (child, animation) {
-          return ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOutBack,
-            ),
-            child: child,
-          );
-        },
-        child: Row(
-          key: ValueKey(tiles), // 关键：强制重建Row
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: tiles.map((tile) => TileWidget(tile)).toList(),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.swap_calls),
-        onPressed: swapTiles,
-      ),
-    );
-  }
-
-  // ==============
-  // 交换方法
-  // ==============
-  void swapTiles() {
-    setState(() {
-      if (tiles.length >= 2) {
-        final temp = tiles[0];
-        tiles[0] = tiles[1];
-        tiles[1] = temp;
-      }
-    });
-  }
-}
