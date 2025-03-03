@@ -422,7 +422,6 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
   }
 }
 
-
 class TaquinGamePage extends StatefulWidget {
   @override
   _TaquinGamePageState createState() => _TaquinGamePageState();
