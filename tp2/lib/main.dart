@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
 
+
+
 void main() {
   runApp(MaterialApp(
     title: 'Exercices Menu',
@@ -25,12 +27,14 @@ class MenuPage extends StatelessWidget {
           ExerciseCard(title: "Exercice 5b", page: Exercise5bPage()),
           ExerciseCard(title: "Exercice 5c", page: Exercise5cPage()),
           ExerciseCard(title: "Exercice 6a", page: Exercise6aPage()),
-          ExerciseCard(title: "Exercice 6b", page: Exercise6bPage())
+          ExerciseCard(title: "Exercice 6b", page: Exercise6bPage()),
+          ExerciseCard(title: "Exercice 7", page: TaquinGamePage()),
         ],
       ),
     );
   }
 }
+
 
 class ExerciseCard extends StatelessWidget {
   final String title;
@@ -55,6 +59,168 @@ class ExerciseCard extends StatelessWidget {
     );
   }
 }
+
+
+class TaquinGamePage extends StatefulWidget {
+  @override
+  _TaquinGamePageState createState() => _TaquinGamePageState();
+}
+
+class _TaquinGamePageState extends State<TaquinGamePage> {
+  int gridSize = 4;
+  List<int> tiles = [];
+  int emptyTileIndex = 0;
+  int moveCount = 0;
+  List<List<int>> previousMoves = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeGame();
+  }
+
+  void _initializeGame() {
+    tiles = List<int>.generate(gridSize * gridSize, (index) => index);
+    emptyTileIndex = tiles.length - 1;
+    _shuffleTiles();
+    moveCount = 0;
+    setState(() {});
+  }
+
+  void _shuffleTiles() {
+    for (int i = 0; i < gridSize * gridSize * 10; i++) {
+      List<int> validMoves = _getValidMoves();
+      int swapIndex = validMoves[math.Random().nextInt(validMoves.length)];
+      _swapTiles(swapIndex, emptyTileIndex, record: false);
+    }
+  }
+
+  List<int> _getValidMoves() {
+    List<int> moves = [];
+    int row = emptyTileIndex ~/ gridSize;
+    int col = emptyTileIndex % gridSize;
+    if (row > 0) moves.add(emptyTileIndex - gridSize);
+    if (row < gridSize - 1) moves.add(emptyTileIndex + gridSize);
+    if (col > 0) moves.add(emptyTileIndex - 1);
+    if (col < gridSize - 1) moves.add(emptyTileIndex + 1);
+    return moves;
+  }
+
+  void _swapTiles(int tileIndex, int emptyIndex, {bool record = true}) {
+    setState(() {
+      if (record) {
+        previousMoves.add(List.from(tiles));
+      }
+      tiles[emptyIndex] = tiles[tileIndex];
+      tiles[tileIndex] = gridSize * gridSize - 1;
+      emptyTileIndex = tileIndex;
+      moveCount++;
+    });
+  }
+
+  void _onTileTap(int index) {
+    if (_getValidMoves().contains(index)) {
+      _swapTiles(index, emptyTileIndex);
+      if (_isSolved()) {
+        _showWinDialog();
+      }
+    }
+  }
+
+  bool _isSolved() {
+    for (int i = 0; i < tiles.length - 1; i++) {
+      if (tiles[i] != i) return false;
+    }
+    return true;
+  }
+
+  void _showWinDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Félicitations !"),
+        content: Text("Vous avez gagné en $moveCount déplacements."),
+        actions: [
+          TextButton(
+            child: Text("OK"),
+            onPressed: () => Navigator.of(context).pop(),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _undoMove() {
+    if (previousMoves.isNotEmpty) {
+      setState(() {
+        tiles = previousMoves.removeLast();
+        emptyTileIndex = tiles.indexOf(gridSize * gridSize - 1);
+        moveCount--;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Jeu de Taquin")),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text("Déplacements: $moveCount"),
+          ),
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridSize,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
+              ),
+              itemCount: tiles.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () => _onTileTap(index),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: tiles[index] == gridSize * gridSize - 1
+                          ? Colors.white
+                          : Colors.grey,
+                      border: Border.all(color: Colors.red, width: 2),
+                    ),
+                    child: Center(
+                      child: tiles[index] == gridSize * gridSize - 1
+                          ? SizedBox.shrink()
+                          : Text(
+                              "${tiles[index]}",
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: _initializeGame, child: Text("Réinitialiser")),
+              SizedBox(width: 20),
+              ElevatedButton(onPressed: _undoMove, child: Text("Annuler")),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+
+
+
 
 class ColoredTile {
   final Color? color;
@@ -273,105 +439,6 @@ class _Exercise6aPageState extends State<Exercise6aPage> {
   }
 }
 
-/*
-class Exercise6bPage extends StatefulWidget {
-  @override
-  _Exercise6bPageState createState() => _Exercise6bPageState();
-}
-
-// ==============
-// 页面状态
-// ==============
-class _Exercise6bPageState extends State<Exercise6bPage> {
-  late List<ColoredTile> tiles;
-  int gridSize = 4; // 默认4x4网格
-  int? selectedIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    generateTiles();
-  }
-
-  void generateTiles() {
-    setState(() {
-      tiles = List.generate(gridSize * gridSize, (index) => ColoredTile.randomColor());
-    });
-  }
-
-  void swapTiles(int index) {
-    setState(() {
-      if (selectedIndex == null) {
-        selectedIndex = index;
-      } else {
-        var temp = tiles[selectedIndex!];
-        tiles[selectedIndex!] = tiles[index];
-        tiles[index] = temp;
-        selectedIndex = null;
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Swapable Color Grid'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: generateTiles,
-          ),
-        ],
-      ),
-      body: Center(
-        child: GridView.builder(
-          padding: EdgeInsets.all(8),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: gridSize,
-            childAspectRatio: 1.0,
-          ),
-          itemCount: tiles.length,
-          itemBuilder: (context, index) {
-            return TileWidget(
-              tiles[index],
-              onTap: () => swapTiles(index),
-            );
-          },
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Grid Size: "),
-            DropdownButton<int>(
-              value: gridSize,
-              items: [3, 4, 5, 6]
-                  .map((size) => DropdownMenuItem<int>(
-                        value: size,
-                        child: Text("${size}x${size}"),
-                      ))
-                  .toList(),
-              onChanged: (size) {
-                if (size != null) {
-                  setState(() {
-                    gridSize = size;
-                    generateTiles();
-                  });
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-*/
 
 
 // ==============
