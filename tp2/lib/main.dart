@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 
 void main() {
@@ -63,11 +65,17 @@ class MenuPage extends StatelessWidget {
             description: " Taquin Game",
             page: TaquinGamePage(),
           ),
+          ExerciseCard(
+            title: "Projet Jeu de Taquin",
+            description: " Projet",
+            page: CompleteTaquinGamePage(),
+          ),
         ],
       ),
     );
   }
 }
+
 
 class ExerciseCard extends StatelessWidget {
   final String title;
@@ -94,6 +102,250 @@ class ExerciseCard extends StatelessWidget {
     );
   }
 }
+
+
+class CompleteTaquinGamePage extends StatefulWidget {
+  @override
+  _CompleteTaquinGamePageState createState() => _CompleteTaquinGamePageState();
+}
+
+class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
+  int gridSize = 3;
+  int shuffleSteps = 30;
+  List<int> tiles = [];
+  int emptyTileIndex = 0;
+  int moveCount = 0;
+  List<List<int>> moveHistory = [];
+  ImageProvider? imageProvider;
+  bool isImageLoaded = false;
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDefaultImage();
+    _initializeGame();
+  }
+
+  void _initializeGame() {
+    tiles = List<int>.generate(gridSize * gridSize, (index) => index);
+    emptyTileIndex = tiles.length - 1;
+    _shuffleTiles();
+    moveCount = 0;
+    moveHistory.clear();
+    setState(() {});
+  }
+
+  void _shuffleTiles() {
+    for (int i = 0; i < shuffleSteps; i++) {
+      List<int> validMoves = _getValidMoves();
+      int swapIndex = validMoves[math.Random().nextInt(validMoves.length)];
+      _swapTiles(swapIndex, emptyTileIndex, record: false);
+    }
+    if (!_isSolvable()) {
+      _shuffleTiles();
+    }
+  }
+
+  bool _isSolvable() {
+    int inversions = 0;
+    for (int i = 0; i < tiles.length; i++) {
+      for (int j = i + 1; j < tiles.length; j++) {
+        if (tiles[i] > tiles[j] && tiles[i] != tiles.length - 1 && tiles[j] != tiles.length - 1) {
+          inversions++;
+        }
+      }
+    }
+    int emptyRow = emptyTileIndex ~/ gridSize;
+    if (gridSize % 2 == 1) {
+      return inversions % 2 == 0;
+    } else {
+      return (emptyRow % 2 == 0) == (inversions % 2 == 1);
+    }
+  }
+
+  List<int> _getValidMoves() {
+    List<int> moves = [];
+    int row = emptyTileIndex ~/ gridSize;
+    int col = emptyTileIndex % gridSize;
+    if (row > 0) moves.add(emptyTileIndex - gridSize);
+    if (row < gridSize - 1) moves.add(emptyTileIndex + gridSize);
+    if (col > 0) moves.add(emptyTileIndex - 1);
+    if (col < gridSize - 1) moves.add(emptyTileIndex + 1);
+    return moves;
+  }
+
+  void _swapTiles(int tileIndex, int emptyIndex, {bool record = true}) {
+    setState(() {
+      if (record) {
+        moveHistory.add(List<int>.from(tiles));
+      }
+      int temp = tiles[tileIndex];
+      tiles[tileIndex] = tiles[emptyIndex];
+      tiles[emptyIndex] = temp;
+      emptyTileIndex = tileIndex;
+      moveCount++;
+    });
+  }
+
+  void _onTileTap(int index) {
+    if (_getValidMoves().contains(index)) {
+      _swapTiles(index, emptyTileIndex);
+      if (_isSolved()) {
+        _showWinDialog();
+      }
+    }
+  }
+
+  bool _isSolved() {
+    for (int i = 0; i < tiles.length - 1; i++) {
+      if (tiles[i] != i) return false;
+    }
+    return true;
+  }
+
+  void _showWinDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("🎉 恭喜！"),
+        content: Text("你用了 $moveCount 步完成拼图！"),
+        actions: [
+          TextButton(
+            child: Text("确定"),
+            onPressed: () => Navigator.of(context).pop(),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _undoMove() {
+    if (moveHistory.isNotEmpty) {
+      setState(() {
+        tiles = moveHistory.removeLast();
+        emptyTileIndex = tiles.indexOf(tiles.length - 1);
+        moveCount--;
+      });
+    }
+  }
+
+  void _loadDefaultImage() {
+    setState(() {
+      imageProvider = AssetImage('assets/image1.jpg');
+      isImageLoaded = true;
+    });
+  }
+
+  Widget _buildImageTile(int index) {
+    if (imageProvider == null) return SizedBox.shrink();
+    int row = index ~/ gridSize;
+    int col = index % gridSize;
+    return ClipRect(
+      child: OverflowBox(
+        maxWidth: gridSize * 100,
+        maxHeight: gridSize * 100,
+        alignment: Alignment.topLeft,
+        child: Transform.translate(
+          offset: Offset(-col * 100, -row * 100),
+          child: Image(
+            image: imageProvider!,
+            width: gridSize * 100,
+            height: gridSize * 100,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("华容道 - 图片拼图"),
+        actions: [
+          IconButton(icon: Icon(Icons.refresh), onPressed: _initializeGame),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Text("步数: $moveCount"),
+          ),
+          Expanded(
+            child: Center(
+              child: Container(
+                width: 300,
+                height: 300,
+                padding: EdgeInsets.all(8.0),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: gridSize,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
+                  ),
+                  itemCount: tiles.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () => _onTileTap(index),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.red, width: 2),
+                        ),
+                        child: isImageLoaded
+                            ? _buildImageTile(index)
+                            : Center(
+                                child: Text(
+                                  "${tiles[index]}",
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.remove),
+                onPressed: () => setState(() {
+                  if (gridSize > 2) gridSize--;
+                  _initializeGame();
+                }),
+              ),
+              Text("$gridSize x $gridSize"),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () => setState(() {
+                  if (gridSize < 9) gridSize++;
+                  _initializeGame();
+                }),
+              ),
+            ],
+          ),
+          ElevatedButton(
+            onPressed: _undoMove,
+            child: Text("撤销上一步"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+
+
+
 
 class TaquinGamePage extends StatefulWidget {
   @override
@@ -1040,5 +1292,4 @@ class _Exercise5cPageState extends State<Exercise5cPage> {
     );
   }
 }
-
 
