@@ -61,6 +61,7 @@ class ExerciseCard extends StatelessWidget {
 }
 
 
+
 class TaquinGamePage extends StatefulWidget {
   @override
   _TaquinGamePageState createState() => _TaquinGamePageState();
@@ -68,6 +69,7 @@ class TaquinGamePage extends StatefulWidget {
 
 class _TaquinGamePageState extends State<TaquinGamePage> {
   int gridSize = 4;
+  int shuffleMoves = 30;
   List<int> tiles = [];
   int emptyTileIndex = 0;
   int moveCount = 0;
@@ -84,11 +86,12 @@ class _TaquinGamePageState extends State<TaquinGamePage> {
     emptyTileIndex = tiles.length - 1;
     _shuffleTiles();
     moveCount = 0;
+    previousMoves.clear();
     setState(() {});
   }
 
   void _shuffleTiles() {
-    for (int i = 0; i < gridSize * gridSize * 10; i++) {
+    for (int i = 0; i < shuffleMoves; i++) {
       List<int> validMoves = _getValidMoves();
       int swapIndex = validMoves[math.Random().nextInt(validMoves.length)];
       _swapTiles(swapIndex, emptyTileIndex, record: false);
@@ -111,8 +114,9 @@ class _TaquinGamePageState extends State<TaquinGamePage> {
       if (record) {
         previousMoves.add(List.from(tiles));
       }
-      tiles[emptyIndex] = tiles[tileIndex];
-      tiles[tileIndex] = gridSize * gridSize - 1;
+      int temp = tiles[tileIndex];
+      tiles[tileIndex] = tiles[emptyIndex];
+      tiles[emptyIndex] = temp;
       emptyTileIndex = tileIndex;
       moveCount++;
     });
@@ -160,53 +164,117 @@ class _TaquinGamePageState extends State<TaquinGamePage> {
     }
   }
 
+  void _increaseGridSize() {
+    if (gridSize < 9) {
+      setState(() {
+        gridSize++;
+        _initializeGame();
+      });
+    }
+  }
+
+  void _decreaseGridSize() {
+    if (gridSize > 2) {
+      setState(() {
+        gridSize--;
+        _initializeGame();
+      });
+    }
+  }
+
+  void _updateShuffleMoves(int moves) {
+    setState(() {
+      shuffleMoves = moves;
+      _initializeGame();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height - 200;
+    double boardSize = math.min(screenWidth, screenHeight * 0.7);
+
     return Scaffold(
       appBar: AppBar(title: Text("Jeu de Taquin")),
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text("Déplacements: $moveCount"),
           ),
           Expanded(
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: gridSize,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-              ),
-              itemCount: tiles.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () => _onTileTap(index),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: tiles[index] == gridSize * gridSize - 1
-                          ? Colors.white
-                          : Colors.grey,
-                      border: Border.all(color: Colors.red, width: 2),
-                    ),
-                    child: Center(
-                      child: tiles[index] == gridSize * gridSize - 1
-                          ? SizedBox.shrink()
-                          : Text(
-                              "${tiles[index]}",
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                            ),
-                    ),
+            child: Center(
+              child: Container(
+                width: boardSize,
+                height: boardSize,
+                padding: EdgeInsets.all(8.0),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: gridSize,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
                   ),
-                );
-              },
+                  itemCount: tiles.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () => _onTileTap(index),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: tiles[index] == gridSize * gridSize - 1
+                              ? Colors.white
+                              : Colors.grey,
+                          border: Border.all(color: Colors.red, width: 2),
+                        ),
+                        child: Center(
+                          child: tiles[index] == gridSize * gridSize - 1
+                              ? SizedBox.shrink()
+                              : Text(
+                                  "${tiles[index]}",
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Column(
             children: [
-              ElevatedButton(onPressed: _initializeGame, child: Text("Réinitialiser")),
-              SizedBox(width: 20),
-              ElevatedButton(onPressed: _undoMove, child: Text("Annuler")),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(onPressed: _initializeGame, child: Text("Réinitialiser")),
+                  SizedBox(width: 20),
+                  ElevatedButton(onPressed: _undoMove, child: Text("Annuler")),
+                ],
+              ),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove),
+                    onPressed: _decreaseGridSize,
+                  ),
+                  Text("${gridSize}x${gridSize}"),
+                  IconButton(
+                    icon: Icon(Icons.add),
+                    onPressed: _increaseGridSize,
+                  ),
+                ],
+              ),
+              Slider(
+                value: shuffleMoves.toDouble(),
+                min: 1,
+                max: 100,
+                divisions: 10,
+                label: "Difficulté: $shuffleMoves",
+                onChanged: (value) => _updateShuffleMoves(value.toInt()),
+              ),
             ],
           ),
         ],
@@ -214,11 +282,6 @@ class _TaquinGamePageState extends State<TaquinGamePage> {
     );
   }
 }
-
-
-
-
-
 
 
 
