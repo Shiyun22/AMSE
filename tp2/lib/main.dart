@@ -104,21 +104,29 @@ class ExerciseCard extends StatelessWidget {
 }
 
 
+
+
 class CompleteTaquinGamePage extends StatefulWidget {
   @override
   _CompleteTaquinGamePageState createState() => _CompleteTaquinGamePageState();
 }
 
 class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
-  int gridSize = 3;
-  int shuffleSteps = 30;
-  List<int> tiles = [];
-  int emptyTileIndex = 0;
-  int moveCount = 0;
-  List<List<int>> moveHistory = [];
-  ImageProvider? imageProvider;
-  bool isImageLoaded = false;
-  final ImagePicker _picker = ImagePicker();
+  final List<String> assetImages = [
+    'assets/image1.jpg',
+    'assets/image2.jpg',
+    'assets/image3.jpg',
+  ];
+  String imageUrl = 'https://picsum.photos/512';
+  int gridSize = 3; // 网格大小
+  List<int> tiles = []; // 拼图块索引
+  int emptyTileIndex = 0; // 空白块索引
+  int moveCount = 0; // 移动次数
+  ImageProvider? imageProvider; // 图片源
+  bool isImageLoaded = false; // 图片是否加载完成
+  final ImagePicker _picker = ImagePicker(); // 图片选择器
+  List<List<int>> moveHistory = []; // 移动历史记录
+  int shuffleSteps = 20; // 默认打乱步数（难度）
 
   @override
   void initState() {
@@ -127,67 +135,53 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     _initializeGame();
   }
 
+  // 初始化游戏
   void _initializeGame() {
     tiles = List<int>.generate(gridSize * gridSize, (index) => index);
-    emptyTileIndex = tiles.length - 1;
-    _shuffleTiles();
-    moveCount = 0;
-    moveHistory.clear();
+    emptyTileIndex = tiles.length - 1; // 空白块在右下角
+    tiles[emptyTileIndex] = -1; // 将空白块标记为 -1
+    _shuffleTiles(shuffleSteps); // 打乱拼图
+    moveCount = 0; // 重置移动次数
+    moveHistory = []; // 清空移动历史记录
     setState(() {});
   }
 
-  void _shuffleTiles() {
-    for (int i = 0; i < shuffleSteps; i++) {
+  // 打乱拼图
+  void _shuffleTiles(int steps) {
+    for (int i = 0; i < steps; i++) {
       List<int> validMoves = _getValidMoves();
       int swapIndex = validMoves[math.Random().nextInt(validMoves.length)];
       _swapTiles(swapIndex, emptyTileIndex, record: false);
     }
-    if (!_isSolvable()) {
-      _shuffleTiles();
-    }
   }
 
-  bool _isSolvable() {
-    int inversions = 0;
-    for (int i = 0; i < tiles.length; i++) {
-      for (int j = i + 1; j < tiles.length; j++) {
-        if (tiles[i] > tiles[j] && tiles[i] != tiles.length - 1 && tiles[j] != tiles.length - 1) {
-          inversions++;
-        }
-      }
-    }
-    int emptyRow = emptyTileIndex ~/ gridSize;
-    if (gridSize % 2 == 1) {
-      return inversions % 2 == 0;
-    } else {
-      return (emptyRow % 2 == 0) == (inversions % 2 == 1);
-    }
-  }
-
+  // 获取可移动的拼图块
   List<int> _getValidMoves() {
     List<int> moves = [];
     int row = emptyTileIndex ~/ gridSize;
     int col = emptyTileIndex % gridSize;
-    if (row > 0) moves.add(emptyTileIndex - gridSize);
-    if (row < gridSize - 1) moves.add(emptyTileIndex + gridSize);
-    if (col > 0) moves.add(emptyTileIndex - 1);
-    if (col < gridSize - 1) moves.add(emptyTileIndex + 1);
+    if (row > 0) moves.add(emptyTileIndex - gridSize); // 上
+    if (row < gridSize - 1) moves.add(emptyTileIndex + gridSize); // 下
+    if (col > 0) moves.add(emptyTileIndex - 1); // 左
+    if (col < gridSize - 1) moves.add(emptyTileIndex + 1); // 右
     return moves;
   }
 
+  // 交换拼图块
   void _swapTiles(int tileIndex, int emptyIndex, {bool record = true}) {
     setState(() {
-      if (record) {
-        moveHistory.add(List<int>.from(tiles));
-      }
       int temp = tiles[tileIndex];
       tiles[tileIndex] = tiles[emptyIndex];
       tiles[emptyIndex] = temp;
       emptyTileIndex = tileIndex;
       moveCount++;
+      if (record) {
+        moveHistory.add(List.from(tiles));
+      }
     });
   }
 
+  // 点击拼图块
   void _onTileTap(int index) {
     if (_getValidMoves().contains(index)) {
       _swapTiles(index, emptyTileIndex);
@@ -197,22 +191,24 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     }
   }
 
+  // 检查是否完成拼图
   bool _isSolved() {
     for (int i = 0; i < tiles.length - 1; i++) {
       if (tiles[i] != i) return false;
     }
-    return true;
+    return emptyTileIndex == tiles.length - 1; // 确保空白格在右下角
   }
 
+  // 显示胜利对话框
   void _showWinDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("🎉 恭喜！"),
-        content: Text("你用了 $moveCount 步完成拼图！"),
+        title: Text("Félicitations !"),
+        content: Text("Vous avez gagné en $moveCount déplacements."),
         actions: [
           TextButton(
-            child: Text("确定"),
+            child: Text("OK"),
             onPressed: () => Navigator.of(context).pop(),
           )
         ],
@@ -220,60 +216,94 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     );
   }
 
+  // 加载默认图片
+  void _loadDefaultImage() {
+    setState(() {
+      imageProvider = AssetImage('assets/image1.jpg'); // 默认使用 image1.jpg
+      isImageLoaded = true;
+    });
+  }
+
+  // 选择本地图片
+  void _pickAssetImage() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Choose a Local Image"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: assetImages.map((image) {
+              return ListTile(
+                title: Text(image.split('/').last),
+                onTap: () {
+                  setState(() {
+                    imageProvider = AssetImage(image);
+                    isImageLoaded = true;
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  // 加载网络图片
+  void _loadNetworkImage() {
+    setState(() {
+      imageUrl = 'https://picsum.photos/512?random=${math.Random().nextInt(1000)}';
+      imageProvider = NetworkImage(imageUrl);
+      isImageLoaded = true;
+    });
+  }
+
+  // 调整网格大小
+  void _adjustGridSize(int delta) {
+    setState(() {
+      gridSize = (gridSize + delta).clamp(2, 9);
+      _initializeGame();
+    });
+  }
+
+  // 撤销上一步操作
   void _undoMove() {
     if (moveHistory.isNotEmpty) {
       setState(() {
         tiles = moveHistory.removeLast();
-        emptyTileIndex = tiles.indexOf(tiles.length - 1);
+        emptyTileIndex = tiles.indexOf(-1); // 找到空白格的位置
         moveCount--;
       });
     }
   }
 
-  void _loadDefaultImage() {
+  // 设置难度（打乱步数）
+  void _setDifficulty(int steps) {
     setState(() {
-      imageProvider = AssetImage('assets/image1.jpg');
-      isImageLoaded = true;
+      shuffleSteps = steps;
+      _initializeGame();
     });
   }
-
-  Widget _buildImageTile(int index) {
-    if (imageProvider == null) return SizedBox.shrink();
-    int row = index ~/ gridSize;
-    int col = index % gridSize;
-    return ClipRect(
-      child: OverflowBox(
-        maxWidth: gridSize * 100,
-        maxHeight: gridSize * 100,
-        alignment: Alignment.topLeft,
-        child: Transform.translate(
-          offset: Offset(-col * 100, -row * 100),
-          child: Image(
-            image: imageProvider!,
-            width: gridSize * 100,
-            height: gridSize * 100,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("华容道 - 图片拼图"),
+        title: Text("Jeu de Taquin - Image Puzzle"),
         actions: [
-          IconButton(icon: Icon(Icons.refresh), onPressed: _initializeGame),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _initializeGame,
+          ),
         ],
       ),
       body: Column(
         children: [
           Padding(
             padding: EdgeInsets.all(16),
-            child: Text("步数: $moveCount"),
+            child: Text("Déplacements: $moveCount"),
           ),
           Expanded(
             child: Center(
@@ -299,7 +329,7 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
                             ? _buildImageTile(index)
                             : Center(
                                 child: Text(
-                                  "${tiles[index]}",
+                                  tiles[index] == -1 ? "" : "${tiles[index]}",
                                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -313,38 +343,84 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              ElevatedButton(
+                onPressed: _pickAssetImage,
+                child: Text("Select Local Image"),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: _loadNetworkImage,
+                child: Text("Load New Network Image"),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               IconButton(
                 icon: Icon(Icons.remove),
-                onPressed: () => setState(() {
-                  if (gridSize > 2) gridSize--;
-                  _initializeGame();
-                }),
+                onPressed: () => _adjustGridSize(-1),
               ),
-              Text("$gridSize x $gridSize"),
+              Text("Grid Size: $gridSize"),
               IconButton(
                 icon: Icon(Icons.add),
-                onPressed: () => setState(() {
-                  if (gridSize < 9) gridSize++;
-                  _initializeGame();
-                }),
+                onPressed: () => _adjustGridSize(1),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () => _setDifficulty(10),
+                child: Text("Easy"),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () => _setDifficulty(50),
+                child: Text("Medium"),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () => _setDifficulty(100),
+                child: Text("Hard"),
               ),
             ],
           ),
           ElevatedButton(
             onPressed: _undoMove,
-            child: Text("撤销上一步"),
+            child: Text("Undo"),
           ),
         ],
       ),
     );
   }
+
+  // 构建图片拼图块
+  Widget _buildImageTile(int index) {
+    if (imageProvider == null || tiles[index] == -1) return SizedBox.shrink();
+
+    int row = tiles[index] ~/ gridSize;
+    int col = tiles[index] % gridSize;
+
+    return ClipRect(
+      child: OverflowBox(
+        maxWidth: gridSize * 100,
+        maxHeight: gridSize * 100,
+        alignment: Alignment.topLeft,
+        child: Transform.translate(
+          offset: Offset(-col * 100, -row * 100),
+          child: Image(
+            image: imageProvider!,
+            width: gridSize * 100,
+            height: gridSize * 100,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
 }
-
-
-
-
-
-
 
 
 class TaquinGamePage extends StatefulWidget {
