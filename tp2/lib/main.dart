@@ -20,6 +20,7 @@ class MenuPage extends StatelessWidget {
       appBar: AppBar(title: Text('TP2')),
       body: ListView(
         children: [
+          ExerciseCard(title: "Exercice 1", page: Exercise1Page()),
           ExerciseCard(
             title: "Exercice 2a",
             description: "Rotate & Scale image",
@@ -219,7 +220,7 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
   // 加载默认图片
   void _loadDefaultImage() {
     setState(() {
-      imageProvider = AssetImage('assets/image1.jpg'); // 默认使用 image1.jpg
+      imageProvider = AssetImage('assets/image3.jpg'); // 默认使用 image3.jpg
       isImageLoaded = true;
     });
   }
