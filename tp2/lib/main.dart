@@ -3,9 +3,6 @@ import 'dart:math' as math;
 import 'dart:async';
 
 
-
-import 'package:flutter/material.dart';
-
 void main() {
   runApp(MaterialApp(
     title: 'TP2',
