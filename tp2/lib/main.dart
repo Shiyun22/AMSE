@@ -4,9 +4,11 @@ import 'dart:async';
 
 
 
+import 'package:flutter/material.dart';
+
 void main() {
   runApp(MaterialApp(
-    title: 'Exercices Menu',
+    title: 'TP2',
     theme: ThemeData(primarySwatch: Colors.blue),
     home: MenuPage(),
   ));
@@ -16,38 +18,74 @@ class MenuPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Menu des Exercices')),
+      appBar: AppBar(title: Text('TP2')),
       body: ListView(
         children: [
-          ExerciseCard(title: "Exercice 1", page: Exercise1Page()),
-          ExerciseCard(title: "Exercice 2a", page: Exercise2aPage()),
-          ExerciseCard(title: "Exercice 2b", page: Exercise2bPage()),
-          ExerciseCard(title: "Exercice 4", page: Exercise4Page()),
-          ExerciseCard(title: "Exercice 5a", page: Exercise5aPage()),
-          ExerciseCard(title: "Exercice 5b", page: Exercise5bPage()),
-          ExerciseCard(title: "Exercice 5c", page: Exercise5cPage()),
-          ExerciseCard(title: "Exercice 6a", page: Exercise6aPage()),
-          ExerciseCard(title: "Exercice 6b", page: Exercise6bPage()),
-          ExerciseCard(title: "Exercice 7", page: TaquinGamePage()),
+          ExerciseCard(
+            title: "Exercice 2a",
+            description: "Rotate & Scale image",
+            page: Exercise2aPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 2b",
+            description: "Animated Rotate & Scale image",
+            page: Exercise2bPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 4",
+            description: "Display a Tile",
+            page: Exercise4Page(),
+          ),
+          ExerciseCard(
+            title: "Exercice 5a",
+            description: "Grid of Colored Boxes",
+            page: Exercise5aPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 5b",
+            description: "Fixed Grid of CroppedImage",
+            page: Exercise5bPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 5c",
+            description: "Configurable Taquin Board",
+            page: Exercise5cPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 6a",
+            description: "Moving Tiles",
+            page: Exercise6aPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 6b",
+            description: "Moving Tiles in Grid",
+            page: Exercise6bPage(),
+          ),
+          ExerciseCard(
+            title: "Exercice 7",
+            description: " Taquin Game",
+            page: TaquinGamePage(),
+          ),
         ],
       ),
     );
   }
 }
 
-
 class ExerciseCard extends StatelessWidget {
   final String title;
+  final String description;
   final Widget page;
 
-  ExerciseCard({required this.title, required this.page});
+  ExerciseCard({required this.title, required this.description, required this.page});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.all(10),
       child: ListTile(
-        title: Text(title),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(description),
         trailing: Icon(Icons.arrow_forward),
         onTap: () {
           Navigator.push(
@@ -59,8 +97,6 @@ class ExerciseCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class TaquinGamePage extends StatefulWidget {
   @override
