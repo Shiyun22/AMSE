@@ -20,7 +20,9 @@ class MenuPage extends StatelessWidget {
       appBar: AppBar(title: Text('TP2')),
       body: ListView(
         children: [
-          ExerciseCard(title: "Exercice 1", page: Exercise1Page()),
+          ExerciseCard(title: "Exercice 1", 
+          description: "image",
+          page: Exercise1Page()),
           ExerciseCard(
             title: "Exercice 2a",
             description: "Rotate & Scale image",
@@ -103,6 +105,7 @@ class ExerciseCard extends StatelessWidget {
     );
   }
 }
+
 
 
 
@@ -309,8 +312,8 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
           Expanded(
             child: Center(
               child: Container(
-                width: 300,
-                height: 300,
+                width: 300, // 固定容器宽度
+                height: 300, // 固定容器高度
                 padding: EdgeInsets.all(8.0),
                 child: GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -404,17 +407,21 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     int row = tiles[index] ~/ gridSize;
     int col = tiles[index] % gridSize;
 
+    // 计算每个拼图块的宽度和高度
+    double tileWidth = 300 / gridSize; // 300 是容器的宽度
+    double tileHeight = 300 / gridSize; // 300 是容器的高度
+
     return ClipRect(
       child: OverflowBox(
-        maxWidth: gridSize * 100,
-        maxHeight: gridSize * 100,
+        maxWidth: gridSize * tileWidth,
+        maxHeight: gridSize * tileHeight,
         alignment: Alignment.topLeft,
         child: Transform.translate(
-          offset: Offset(-col * 100, -row * 100),
+          offset: Offset(-col * tileWidth, -row * tileHeight),
           child: Image(
             image: imageProvider!,
-            width: gridSize * 100,
-            height: gridSize * 100,
+            width: gridSize * tileWidth,
+            height: gridSize * tileHeight,
             fit: BoxFit.cover,
           ),
         ),
@@ -422,6 +429,11 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     );
   }
 }
+
+
+
+
+
 
 class TaquinGamePage extends StatefulWidget {
   @override
