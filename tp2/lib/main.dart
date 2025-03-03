@@ -109,7 +109,6 @@ class ExerciseCard extends StatelessWidget {
 
 
 
-
 class CompleteTaquinGamePage extends StatefulWidget {
   @override
   _CompleteTaquinGamePageState createState() => _CompleteTaquinGamePageState();
@@ -128,9 +127,12 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
   int moveCount = 0; // 移动次数
   ImageProvider? imageProvider; // 图片源
   bool isImageLoaded = false; // 图片是否加载完成
+  bool isGameStarted = false; // 游戏是否开始
   final ImagePicker _picker = ImagePicker(); // 图片选择器
   List<List<int>> moveHistory = []; // 移动历史记录
   int shuffleSteps = 20; // 默认打乱步数（难度）
+  int selectedDifficulty = 20; // 当前选中的难度
+  List<int>? initialShuffledState; // 游戏开始时的打乱状态
 
   @override
   void initState() {
@@ -144,9 +146,9 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     tiles = List<int>.generate(gridSize * gridSize, (index) => index);
     emptyTileIndex = tiles.length - 1; // 空白块在右下角
     tiles[emptyTileIndex] = -1; // 将空白块标记为 -1
-    _shuffleTiles(shuffleSteps); // 打乱拼图
     moveCount = 0; // 重置移动次数
-    moveHistory = []; // 清空移动历史记录
+    moveHistory = [List.from(tiles)]; // 初始化历史记录
+    initialShuffledState = null; // 重置初始打乱状态
     setState(() {});
   }
 
@@ -155,8 +157,11 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     for (int i = 0; i < steps; i++) {
       List<int> validMoves = _getValidMoves();
       int swapIndex = validMoves[math.Random().nextInt(validMoves.length)];
-      _swapTiles(swapIndex, emptyTileIndex, record: false);
+      _swapTiles(swapIndex, emptyTileIndex, record: false, countMove: false); // 打乱时不计数
     }
+    // 记录打乱后的第一个状态
+    initialShuffledState = List.from(tiles);
+    moveHistory = [List.from(tiles)]; // 重置历史记录
   }
 
   // 获取可移动的拼图块
@@ -172,15 +177,17 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
   }
 
   // 交换拼图块
-  void _swapTiles(int tileIndex, int emptyIndex, {bool record = true}) {
+  void _swapTiles(int tileIndex, int emptyIndex, {bool record = true, bool countMove = true}) {
     setState(() {
       int temp = tiles[tileIndex];
       tiles[tileIndex] = tiles[emptyIndex];
       tiles[emptyIndex] = temp;
       emptyTileIndex = tileIndex;
-      moveCount++;
+      if (countMove) {
+        moveCount++; // 只有在 countMove 为 true 时才增加移动次数
+      }
       if (record) {
-        moveHistory.add(List.from(tiles));
+        moveHistory.add(List.from(tiles)); // 记录当前状态
       }
     });
   }
@@ -274,11 +281,20 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
 
   // 撤销上一步操作
   void _undoMove() {
-    if (moveHistory.isNotEmpty) {
+    if (moveHistory.length > 1) { // 确保至少有一个历史状态
       setState(() {
-        tiles = moveHistory.removeLast();
+        moveHistory.removeLast(); // 移除当前状态
+        tiles = List.from(moveHistory.last); // 恢复到上一步状态
         emptyTileIndex = tiles.indexOf(-1); // 找到空白格的位置
-        moveCount--;
+        moveCount--; // 减少移动次数
+      });
+    } else if (initialShuffledState != null) {
+      // 如果历史记录为空，恢复到初始打乱状态
+      setState(() {
+        tiles = List.from(initialShuffledState!);
+        emptyTileIndex = tiles.indexOf(-1); // 找到空白格的位置
+        moveCount = 0; // 重置移动次数
+        moveHistory = [List.from(tiles)]; // 重置历史记录
       });
     }
   }
@@ -286,8 +302,25 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
   // 设置难度（打乱步数）
   void _setDifficulty(int steps) {
     setState(() {
+      selectedDifficulty = steps;
       shuffleSteps = steps;
       _initializeGame();
+    });
+  }
+
+  // 开始游戏
+  void _startGame() {
+    setState(() {
+      isGameStarted = true;
+      _shuffleTiles(shuffleSteps); // 打乱拼图
+    });
+  }
+
+  // 停止游戏
+  void _stopGame() {
+    setState(() {
+      isGameStarted = false;
+      _initializeGame(); // 重置游戏状态
     });
   }
 
@@ -312,48 +345,65 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
           Expanded(
             child: Center(
               child: Container(
-                width: 300, // 固定容器宽度
-                height: 300, // 固定容器高度
+                width: 300,
+                height: 300,
                 padding: EdgeInsets.all(8.0),
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: gridSize,
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 4,
-                  ),
-                  itemCount: tiles.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () => _onTileTap(index),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.red, width: 2),
+                child: isGameStarted
+                    ? GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: gridSize,
+                          crossAxisSpacing: 4,
+                          mainAxisSpacing: 4,
                         ),
-                        child: isImageLoaded
-                            ? _buildImageTile(index)
-                            : Center(
-                                child: Text(
-                                  tiles[index] == -1 ? "" : "${tiles[index]}",
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
+                        itemCount: tiles.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () => _onTileTap(index),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.red, width: 2),
                               ),
+                              child: isImageLoaded
+                                  ? _buildImageTile(index)
+                                  : Center(
+                                      child: Text(
+                                        tiles[index] == -1 ? "" : "${tiles[index]}",
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                            ),
+                          );
+                        },
+                      )
+                    : Image(
+                        image: imageProvider!,
+                        width: 300,
+                        height: 300,
+                        fit: BoxFit.cover,
                       ),
-                    );
-                  },
-                ),
               ),
             ),
           ),
+          if (!isGameStarted)
+            ElevatedButton(
+              onPressed: _startGame,
+              child: Text("Start Game"),
+            ),
+          if (isGameStarted)
+            ElevatedButton(
+              onPressed: _stopGame,
+              child: Text("Stop Game"),
+            ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: _pickAssetImage,
+                onPressed: isGameStarted ? null : _pickAssetImage,
                 child: Text("Select Local Image"),
               ),
               SizedBox(width: 10),
               ElevatedButton(
-                onPressed: _loadNetworkImage,
+                onPressed: isGameStarted ? null : _loadNetworkImage,
                 child: Text("Load New Network Image"),
               ),
             ],
@@ -363,12 +413,12 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
             children: [
               IconButton(
                 icon: Icon(Icons.remove),
-                onPressed: () => _adjustGridSize(-1),
+                onPressed: isGameStarted ? null : () => _adjustGridSize(-1),
               ),
               Text("Grid Size: $gridSize"),
               IconButton(
                 icon: Icon(Icons.add),
-                onPressed: () => _adjustGridSize(1),
+                onPressed: isGameStarted ? null : () => _adjustGridSize(1),
               ),
             ],
           ),
@@ -376,23 +426,32 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: () => _setDifficulty(10),
+                onPressed: isGameStarted ? null : () => _setDifficulty(10),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: selectedDifficulty == 10 ? Colors.blue : null,
+                ),
                 child: Text("Easy"),
               ),
               SizedBox(width: 10),
               ElevatedButton(
-                onPressed: () => _setDifficulty(50),
+                onPressed: isGameStarted ? null : () => _setDifficulty(50),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: selectedDifficulty == 50 ? Colors.blue : null,
+                ),
                 child: Text("Medium"),
               ),
               SizedBox(width: 10),
               ElevatedButton(
-                onPressed: () => _setDifficulty(100),
+                onPressed: isGameStarted ? null : () => _setDifficulty(100),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: selectedDifficulty == 100 ? Colors.blue : null,
+                ),
                 child: Text("Hard"),
               ),
             ],
           ),
           ElevatedButton(
-            onPressed: _undoMove,
+            onPressed: isGameStarted ? _undoMove : null,
             child: Text("Undo"),
           ),
         ],
@@ -429,8 +488,6 @@ class _CompleteTaquinGamePageState extends State<CompleteTaquinGamePage> {
     );
   }
 }
-
-
 
 
 
