@@ -111,9 +111,6 @@ class Exercise6bPage extends StatefulWidget {
   _Exercise6bPageState createState() => _Exercise6bPageState();
 }
 
-// ==============
-// 页面状态
-// ==============
 class _Exercise6bPageState extends State<Exercise6bPage> {
   late List<ColoredTile> tiles;
   int gridSize = 4; // 默认4x4网格
@@ -148,7 +145,7 @@ class _Exercise6bPageState extends State<Exercise6bPage> {
     int row1 = index1 ~/ gridSize, col1 = index1 % gridSize;
     int row2 = index2 ~/ gridSize, col2 = index2 % gridSize;
     return (row1 == row2 && (col1 - col2).abs() == 1) ||
-           (col1 == col2 && (row1 - row2).abs() == 1);
+        (col1 == col2 && (row1 - row2).abs() == 1);
   }
 
   @override
@@ -164,21 +161,38 @@ class _Exercise6bPageState extends State<Exercise6bPage> {
           ),
         ],
       ),
-      body: Center(
-        child: GridView.builder(
-          padding: EdgeInsets.all(8),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: gridSize,
-            childAspectRatio: 1.0,
-          ),
-          itemCount: tiles.length,
-          itemBuilder: (context, index) {
-            return TileWidget(
-              tiles[index],
-              onTap: () => swapTiles(index),
-            );
-          },
-        ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          double boardSize = math.min(constraints.maxWidth, constraints.maxHeight) - 32;
+          double tileSize = (boardSize / gridSize) - 8;
+
+          return Center(
+            child: Container(
+              width: boardSize,
+              height: boardSize,
+              padding: EdgeInsets.all(8),
+              child: GridView.builder(
+                physics: NeverScrollableScrollPhysics(), // 禁止滚动，适应屏幕
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: gridSize,
+                  crossAxisSpacing: 4,
+                  mainAxisSpacing: 4,
+                ),
+                itemCount: tiles.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: tileSize,
+                    height: tileSize,
+                    child: TileWidget(
+                      tiles[index],
+                      onTap: () => swapTiles(index),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.all(8.0),
