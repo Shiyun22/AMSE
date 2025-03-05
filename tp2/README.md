@@ -1,4 +1,4 @@
-# TP2 - Flutter Image Puzzle Game
+# TP2 - AMSE
 
 ## Description
 This Flutter project is a collection of interactive exercises focused on image manipulation, transformations, and an image-based sliding puzzle game (Jeu de Taquin). The application consists of multiple exercises showcasing various Flutter features such as animations, image processing, grid layouts, and game logic implementation.
@@ -40,22 +40,7 @@ To run this project on your local machine:
 - Configure the Taquin puzzle by selecting an image, adjusting grid size, and setting difficulty.
 - Play the Taquin game by sliding tiles to arrange them in the correct order.
 
-## Project Structure
-```
-lib/
-│-- main.dart             # Entry point of the application
-│-- menu_page.dart        # Main menu UI
-│-- exercise_1.dart       # Display an image
-│-- exercise_2a.dart      # Rotate & Scale image
-│-- exercise_2b.dart      # Animated transformations
-│-- exercise_4.dart       # Display a tile
-│-- exercise_5a.dart      # Grid of colored boxes
-│-- exercise_5b.dart      # Cropped image grid
-│-- exercise_5c.dart      # Configurable Taquin board
-│-- exercise_6a.dart      # Moving tiles
-│-- exercise_6b.dart      # Moving tiles in a grid
-│-- taquin_game.dart      # Full Taquin game implementation
-```
+
 
 ## Dependencies
 - `flutter/material.dart`: UI framework
